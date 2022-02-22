@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Hyperf\DTO\Middleware;
 
-use Hyperf\DTO\Mapper;
 use Hyperf\DTO\Scan\MethodParametersManager;
 use Hyperf\DTO\ValidationDto;
 use Hyperf\HttpMessage\Stream\SwooleStream;
@@ -12,6 +11,8 @@ use Hyperf\Utils\Codec\Json;
 use Hyperf\Utils\Context;
 use Hyperf\Utils\Contracts\Arrayable;
 use Hyperf\Utils\Contracts\Jsonable;
+use InvalidArgumentException;
+use JsonMapper_Exception;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -69,7 +70,7 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
                     $obj = $this->container->get($definition->getName());
                     $injections[] = $this->validateAndMap($callableName, $definition->getMeta('name'), $definition->getName(), $obj);
                 } else {
-                    throw new \InvalidArgumentException("Parameter '{$definition->getMeta('name')}' "
+                    throw new InvalidArgumentException("Parameter '{$definition->getMeta('name')}' "
                         . "of {$callableName} should not be null");
                 }
             } else {
@@ -82,7 +83,7 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
     /**
      * @param string $callableName 'App\Controller\DemoController::index'
      * @param $obj
-     * @throws \JsonMapper_Exception
+     * @throws JsonMapper_Exception
      */
     private function validateAndMap(string $callableName, string $paramName, string $className, $obj): mixed
     {
@@ -105,6 +106,6 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
         if ($methodParameter->isValid()) {
             $validationDTO->validate($className, $param);
         }
-        return Mapper::map($param, make($className));
+        return new $className($param);
     }
 }
