@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hyperf\DTO\Scan;
 
 use Hyperf\ApiDocs\Annotation\ApiModelProperty;
+use Hyperf\DTO\Reflection;
 use Hyperf\Di\MethodDefinitionCollectorInterface;
 use Hyperf\Di\ReflectionManager;
 use Hyperf\DTO\Annotation\Contracts\RequestBody;
@@ -15,6 +16,8 @@ use Hyperf\DTO\Annotation\Validation\BaseValidation;
 use Hyperf\DTO\ApiAnnotation;
 use Hyperf\DTO\Exception\DtoException;
 use JsonMapper;
+use phpDocumentor\Reflection\DocBlockFactory;
+use phpDocumentor\Reflection\Types\Context;
 use Psr\Container\ContainerInterface;
 use ReflectionException;
 use ReflectionMethod;
@@ -67,6 +70,7 @@ class ScanAnnotation extends JsonMapper
         }
         self::$scanClassArray[] = $className;
         $rc = ReflectionManager::reflectClass($className);
+        $context = new Context($rc->getNamespaceName(), Reflection::getUseStatements($rc));
         $strNs = $rc->getNamespaceName();
         foreach ($rc->getProperties() ?? [] as $reflectionProperty) {
             $propertyClassName = $type = $this->getTypeName($reflectionProperty);
@@ -83,6 +87,13 @@ class ScanAnnotation extends JsonMapper
                     if ($this->isArrayOfType($varType)) {
                         $arrType = substr($varType, 0, -2);
                         $isSimpleType = $this->isSimpleType($arrType);
+                        if (!$isSimpleType) {
+                            $factory = DocBlockFactory::createInstance();
+                            $block = $factory->create($docblock, $context);
+                            $tags = $block->getTagsByName('var');
+                            $tag = current($tags);
+                            $arrType = $tag->getType()->getValueType()->getFqsen()->__toString();
+                        }
                         if (! $this->isSimpleType($arrType) && $this->container->has($arrType)) {
                             $this->scanClass($arrType);
                             PropertyManager::setNotSimpleClass($className);
