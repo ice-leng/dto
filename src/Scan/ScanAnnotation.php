@@ -15,6 +15,7 @@ use Hyperf\DTO\Annotation\Contracts\Valid;
 use Hyperf\DTO\Annotation\Validation\BaseValidation;
 use Hyperf\DTO\ApiAnnotation;
 use Hyperf\DTO\Exception\DtoException;
+use MabeEnum\Enum;
 use JsonMapper;
 use phpDocumentor\Reflection\DocBlockFactory;
 use phpDocumentor\Reflection\Types\Context;
@@ -104,11 +105,17 @@ class ScanAnnotation extends JsonMapper
             }
             if (! $this->isSimpleType($type)) {
                 $this->scanClass($type);
-                $isSimpleType = false;
-                $propertyClassName = $type;
-                PropertyManager::setNotSimpleClass($className);
+                $construct = ReflectionManager::reflectClass($type)->getConstructor();
+                if ($construct->class === Enum::class) {
+                    $isSimpleType = true;
+                    $values = $propertyClassName::getValues();
+                    $propertyClassName = $type = gettype(current($values));
+                } else {
+                    $isSimpleType = false;
+                    $propertyClassName = $type;
+                    PropertyManager::setNotSimpleClass($className);
+                }
             }
-
             $property = new Property();
             $property->type = $type;
             $property->isSimpleType = $isSimpleType;
