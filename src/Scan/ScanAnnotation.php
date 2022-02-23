@@ -73,6 +73,7 @@ class ScanAnnotation extends JsonMapper
         $rc = ReflectionManager::reflectClass($className);
         $context = new Context($rc->getNamespaceName(), Reflection::getUseStatements($rc));
         $strNs = $rc->getNamespaceName();
+        $factory = DocBlockFactory::createInstance();
         foreach ($rc->getProperties() ?? [] as $reflectionProperty) {
             $propertyClassName = $type = $this->getTypeName($reflectionProperty);
             $fieldName = $reflectionProperty->getName();
@@ -89,7 +90,6 @@ class ScanAnnotation extends JsonMapper
                         $arrType = substr($varType, 0, -2);
                         $isSimpleType = $this->isSimpleType($arrType);
                         if (!$isSimpleType) {
-                            $factory = DocBlockFactory::createInstance();
                             $block = $factory->create($docblock, $context);
                             $tags = $block->getTagsByName('var');
                             $tag = current($tags);
