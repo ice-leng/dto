@@ -94,14 +94,6 @@ class ScanAnnotation extends JsonMapper
                             $tags = $block->getTagsByName('var');
                             $tag = current($tags);
                             $arrType = $tag->getType()->getValueType()->getFqsen()->__toString();
-                            if (!$this->isSimpleType($arrType)) {
-                                $construct = ReflectionManager::reflectClass($arrType)->getConstructor();
-                                if ($construct->class === Enum::class) {
-                                    $values = $arrType::getValues();
-                                    $arrType = gettype(current($values));
-                                    $isSimpleType = true;
-                                }
-                            }
                         }
                         if (! $this->isSimpleType($arrType) && $this->container->has($arrType)) {
                             $this->scanClass($arrType);
@@ -113,16 +105,9 @@ class ScanAnnotation extends JsonMapper
             }
             if (! $this->isSimpleType($type)) {
                 $this->scanClass($type);
-                $construct = ReflectionManager::reflectClass($type)->getConstructor();
-                if ($construct->class === Enum::class) {
-                    $isSimpleType = true;
-                    $values = $propertyClassName::getValues();
-                    $propertyClassName = $type = gettype(current($values));
-                } else {
-                    $isSimpleType = false;
-                    $propertyClassName = $type;
-                    PropertyManager::setNotSimpleClass($className);
-                }
+                $isSimpleType = false;
+                $propertyClassName = $type;
+                PropertyManager::setNotSimpleClass($className);
             }
             $property = new Property();
             $property->type = $type;
