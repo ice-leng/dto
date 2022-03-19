@@ -13,6 +13,7 @@ use Hyperf\Utils\Contracts\Arrayable;
 use Hyperf\Utils\Contracts\Jsonable;
 use InvalidArgumentException;
 use JsonMapper_Exception;
+use Lengbin\Common\BaseObject;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -48,6 +49,9 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
         }
         //object
         if (is_object($response)) {
+            if ($response instanceof BaseObject) {
+                $response = $response->toArray();
+            }
             return $this->response()
                 ->withAddedHeader('content-type', 'application/json')
                 ->withBody(new SwooleStream(Json::encode($response)));
