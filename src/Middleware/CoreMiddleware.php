@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hyperf\DTO\Middleware;
 
+use Hyperf\DTO\Entity\CommonResponse;
 use Hyperf\DTO\Scan\MethodParametersManager;
 use Hyperf\DTO\ValidationDto;
 use Hyperf\HttpMessage\Stream\SwooleStream;
@@ -49,12 +50,11 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
         }
         //object
         if (is_object($response)) {
-            if ($response instanceof BaseObject) {
-                $response = $response->toArray();
-            }
+            $commonResponse = new CommonResponse();
+            $commonResponse->data = $response;
             return $this->response()
                 ->withAddedHeader('content-type', 'application/json')
-                ->withBody(new SwooleStream(Json::encode($response)));
+                ->withBody(new SwooleStream(Json::encode($commonResponse->toArray())));
         }
 
         return $this->response()->withAddedHeader('content-type', 'text/plain')->withBody(new SwooleStream((string) $response));
