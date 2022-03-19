@@ -14,6 +14,7 @@ use Hyperf\DTO\Annotation\Contracts\Valid;
 use Hyperf\DTO\Annotation\Validation\BaseValidation;
 use Hyperf\DTO\ApiAnnotation;
 use Hyperf\DTO\Exception\DtoException;
+use Lengbin\Common\Annotation\ArrayType;
 use Lengbin\Common\Reflection;
 use MabeEnum\Enum;
 use JsonMapper;
@@ -74,6 +75,7 @@ class ScanAnnotation extends JsonMapper
         $context = new Context($rc->getNamespaceName(), Reflection::getUseStatements($rc));
         $strNs = $rc->getNamespaceName();
         $factory = DocBlockFactory::createInstance();
+        $isPhp8 = version_compare(PHP_VERSION, '8.0.0', '>');
         foreach ($rc->getProperties() ?? [] as $reflectionProperty) {
             $propertyClassName = $type = $this->getTypeName($reflectionProperty);
             $fieldName = $reflectionProperty->getName();
@@ -82,6 +84,21 @@ class ScanAnnotation extends JsonMapper
                 $arrType = null;
                 $docblock = $reflectionProperty->getDocComment();
                 $annotations = static::parseAnnotations($docblock);
+                if ($isPhp8) {
+                    $arrayTypes = $reflectionProperty->getAttributes(ArrayType::class);
+                    if (!empty($arrayTypes)) {
+                        $arrayType = $arrayTypes[0]->newInstance();
+                        if ($arrayType->className) {
+                            $annotations = [];
+                            $isSimpleType = false;
+                            $arrType = $arrayType->className;
+                            if (! $this->isSimpleType($arrType) && $this->container->has($arrType)) {
+                                $this->scanClass($arrType);
+                                PropertyManager::setNotSimpleClass($className);
+                            }
+                        }
+                    }
+                }
                 if (! empty($annotations)) {
                     //support "@var type description"
                     [$varType] = explode(' ', $annotations['var'][0]);
