@@ -129,7 +129,7 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
                 $param[$name] = $request->getQueryParams()[$name] ?? null;
             }
             if ($property->getAttributes(ApiFileProperty::class)) {
-                $param[$name] = $request->file($name);
+                $param[$name] = $request->getUploadedFiles()[$name] ?? null;
             }
         }
         return new $className($param);
