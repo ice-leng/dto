@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Hyperf\DTO\Middleware;
 
+use Hyperf\ApiDocs\Annotation\ApiAttributeProperty;
+use Hyperf\ApiDocs\Annotation\ApiHeaderProperty;
+use Hyperf\ApiDocs\Annotation\ApiQueryProperty;
 use Hyperf\DTO\Entity\CommonResponse;
 use Hyperf\DTO\Scan\MethodParametersManager;
 use Hyperf\DTO\ValidationDto;
@@ -17,6 +20,8 @@ use JsonMapper_Exception;
 use Lengbin\Common\BaseObject;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use ReflectionClass;
+
 
 class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
 {
@@ -109,6 +114,20 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
         //validate
         if ($methodParameter->isValid()) {
             $validationDTO->validate($className, $param);
+        }
+
+        $reflection = new ReflectionClass($className);
+        foreach ($reflection->getProperties() as $property) {
+            $name = $property->getName();
+            if ($property->getAttributes(ApiHeaderProperty::class)) {
+                $param[$name] = $request->getHeaderLine($name);
+            }
+            if ($property->getAttributes(ApiAttributeProperty::class)) {
+                $param[$name] = $request->getAttribute($name);
+            }
+            if ($property->getAttributes(ApiQueryProperty::class)) {
+                $param[$name] = $request->getQueryParams()[$name] ?? null;
+            }
         }
         return new $className($param);
     }
