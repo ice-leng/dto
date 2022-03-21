@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hyperf\DTO\Middleware;
 
 use Hyperf\ApiDocs\Annotation\ApiAttributeProperty;
+use Hyperf\ApiDocs\Annotation\ApiFileProperty;
 use Hyperf\ApiDocs\Annotation\ApiHeaderProperty;
 use Hyperf\ApiDocs\Annotation\ApiQueryProperty;
 use Hyperf\DTO\Entity\CommonResponse;
@@ -126,6 +127,9 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
             }
             if ($property->getAttributes(ApiQueryProperty::class)) {
                 $param[$name] = $request->getQueryParams()[$name] ?? null;
+            }
+            if ($property->getAttributes(ApiFileProperty::class)) {
+                $param[$name] = $request->file($name);
             }
         }
         return new $className($param);
