@@ -22,7 +22,6 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use ReflectionClass;
 
-
 class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
 {
     protected function parseMethodParameters(string $controller, string $action, array $arguments): array
@@ -43,26 +42,20 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
         }
 
         if (is_array($response) || $response instanceof Arrayable) {
-            return $this->response()
-                ->withAddedHeader('content-type', 'application/json')
-                ->withBody(new SwooleStream(Json::encode($response)));
+            return $this->response()->withAddedHeader('content-type', 'application/json')->withBody(new SwooleStream(Json::encode($response)));
         }
 
         if ($response instanceof Jsonable) {
-            return $this->response()
-                ->withAddedHeader('content-type', 'application/json')
-                ->withBody(new SwooleStream((string) $response));
+            return $this->response()->withAddedHeader('content-type', 'application/json')->withBody(new SwooleStream((string)$response));
         }
         //object
         if (is_object($response)) {
             $commonResponse = new CommonResponse();
             $commonResponse->data = $response;
-            return $this->response()
-                ->withAddedHeader('content-type', 'application/json')
-                ->withBody(new SwooleStream(Json::encode($commonResponse->toArray())));
+            return $this->response()->withAddedHeader('content-type', 'application/json')->withBody(new SwooleStream(Json::encode($commonResponse->toArray())));
         }
 
-        return $this->response()->withAddedHeader('content-type', 'text/plain')->withBody(new SwooleStream((string) $response));
+        return $this->response()->withAddedHeader('content-type', 'text/plain')->withBody(new SwooleStream((string)$response));
     }
 
     private function getInjections(array $definitions, string $callableName, array $arguments): array
@@ -79,8 +72,7 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
                     $obj = $this->container->get($definition->getName());
                     $injections[] = $this->validateAndMap($callableName, $definition->getMeta('name'), $definition->getName(), $obj);
                 } else {
-                    throw new InvalidArgumentException("Parameter '{$definition->getMeta('name')}' "
-                        . "of {$callableName} should not be null");
+                    throw new InvalidArgumentException("Parameter '{$definition->getMeta('name')}' " . "of {$callableName} should not be null");
                 }
             } else {
                 $injections[] = $this->getNormalizer()->denormalize($value, $definition->getName());
@@ -91,7 +83,8 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
 
     /**
      * @param string $callableName 'App\Controller\DemoController::index'
-     * @param $obj
+     * @param        $obj
+     *
      * @throws JsonMapper_Exception
      */
     private function validateAndMap(string $callableName, string $paramName, string $className, $obj): mixed
@@ -116,6 +109,14 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
             $validationDTO->validate($className, $param);
         }
 
+        // other property value
+        $param = $this->getPropertyValue($request, $className, $param);
+
+        return new $className($param);
+    }
+
+    protected function getPropertyValue(ServerRequestInterface $request, string $className, array $param): array
+    {
         $reflection = new ReflectionClass($className);
         foreach ($reflection->getProperties() as $property) {
             $name = $property->getName();
@@ -131,7 +132,16 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
             if ($property->getAttributes(ApiFileProperty::class)) {
                 $param[$name] = $request->getUploadedFiles()[$name] ?? null;
             }
+
+            $type = $property->getType();
+            if (!$type->isBuiltin()) {
+                $itemValue = $this->getPropertyValue($request, $type->getName(), $param[$name] ?? []);
+                if (!empty($itemValue)) {
+                    $param[$name] = $itemValue;
+                }
+            }
         }
-        return new $className($param);
+        return $param;
     }
+
 }
