@@ -104,13 +104,14 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
         } elseif ($methodParameter->isRequestFormData()) {
             $param = $request->getParsedBody();
         }
+
+        // other property value
+        $param = $this->getPropertyValue($request, $className, $param);
+
         //validate
         if ($methodParameter->isValid()) {
             $validationDTO->validate($className, $param);
         }
-
-        // other property value
-        $param = $this->getPropertyValue($request, $className, $param);
 
         return new $className($param);
     }
