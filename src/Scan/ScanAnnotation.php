@@ -14,6 +14,7 @@ use Hyperf\DTO\Annotation\Contracts\Valid;
 use Hyperf\DTO\Annotation\Validation\BaseValidation;
 use Hyperf\DTO\ApiAnnotation;
 use Hyperf\DTO\Exception\DtoException;
+use Hyperf\Validation\Rules\In;
 use Lengbin\Common\Annotation\ArrayType;
 use Lengbin\Common\Reflection;
 use MabeEnum\Enum;
@@ -132,14 +133,14 @@ class ScanAnnotation extends JsonMapper
             $property->className = $propertyClassName ? trim($propertyClassName, '\\') : null;
             PropertyManager::setContent($className, $fieldName, $property);
 
-            $this->generateValidation($className, $fieldName);
+            $this->generateValidation($className, $fieldName, $property);
         }
     }
 
     /**
      * generateValidation.
      */
-    protected function generateValidation(string $className, string $fieldName)
+    protected function generateValidation(string $className, string $fieldName, Property $property)
     {
         /** @var BaseValidation[] $validation */
         $validationArr = [];
@@ -162,6 +163,9 @@ class ScanAnnotation extends JsonMapper
             [$messagesRule,] = explode(':', $validation->getRule());
             $key = $fieldName . '.' . $messagesRule;
             ValidationManager::setMessages($className, $key, $validation->messages);
+        }
+        if (is_subclass_of($property->className, Enum::class)) {
+            $ruleArray[] = new In($property->className::getValues());
         }
         if (! empty($ruleArray)) {
             ValidationManager::setRule($className, $fieldName, $ruleArray);
