@@ -135,9 +135,12 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
 
             $type = $property->getType();
             if (!$type->isBuiltin()) {
-                $itemValue = $this->getPropertyValue($request, $type->getName(), $param[$name] ?? []);
-                if (!empty($itemValue)) {
-                    $param[$name] = $itemValue;
+                $subParams = $param[$name] ?? [];
+                if (is_array($subParams)) {
+                    $itemValue = $this->getPropertyValue($request, $type->getName(), $subParams);
+                    if (!empty($itemValue)) {
+                        $param[$name] = $itemValue;
+                    }
                 }
             }
         }

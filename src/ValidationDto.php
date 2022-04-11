@@ -10,6 +10,7 @@ use Hyperf\DTO\Scan\ValidationManager;
 use Hyperf\Utils\ApplicationContext;
 use Hyperf\Validation\Contract\ValidatorFactoryInterface;
 use Hyperf\Validation\ValidationException;
+use MabeEnum\Enum;
 
 class ValidationDto
 {
@@ -40,7 +41,7 @@ class ValidationDto
         }
         $notSimplePropertyArr = PropertyManager::getPropertyAndNotSimpleType($className);
         foreach ($notSimplePropertyArr as $fieldName => $property) {
-            if (! empty($data[$fieldName])) {
+            if (! empty($data[$fieldName]) && !is_subclass_of($property->className, Enum::class)) {
                 $this->validateResolved($property->className, $data[$fieldName]);
             }
         }
